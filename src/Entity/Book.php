@@ -5,41 +5,50 @@ namespace App\Entity;
 use App\Repository\BookRepository;
 
 use DateTimeImmutable;
-
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 use Symfony\Component\Serializer\Annotation\Groups;
-use Symfony\Component\Serializer\Attribute\MaxDepth;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: BookRepository::class)]
 class Book
 {
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['author','book'])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 100)]
-    #[Groups(["book"])]
-    private ?string $title = null;
+    #[ORM\Column(type: Types::STRING, length: 50,nullable: false)]
+    #[Groups(['author','book'])]
+    private string $title;
 
-    #[ORM\Column(length: 100, nullable: true)]
-    #[Groups(["book"])]
+    #[ORM\Column(type: Types::STRING, length: 50, nullable: true)]
+    #[Groups(['author','book'])]
     private ?string $description = null;
 
-    #[ORM\Column(type: "text")]
-    #[Groups(["book"])]
-    private ?string $image = null;
+    #[ORM\Column(type: Types::STRING, length: 255,unique: true, nullable: false)]
+    #[Assert\File(
+        maxSize: '2M',
+        mimeTypes: ['image/jpeg', 'image/png'],
+        mimeTypesMessage: 'Please upload the image in jpg or png format',
+        uploadErrorMessage: 'Error uploading file'
+    )]
+    #[Groups(['author','book'])]
+    private string $image;
 
-    #[ORM\Column(type: "datetime_immutable")]
-    #[Groups(["book"])]
-    private ?DateTimeImmutable $publishedAt = null;
+    #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE,nullable: false)]
+    #[Assert\DateTime]
+    #[Groups(['author','book'])]
+    private DateTimeImmutable $publishedAt;
 
-    #[ORM\ManyToMany(targetEntity: Author::class, mappedBy: 'books')]
-    #[Groups(["book"])]
-    #[MaxDepth(1)]
+    #[ORM\ManyToMany(targetEntity: Author::class, inversedBy: 'books')]
+    #[Groups('book')]
+    #[ORM\JoinTable(name: "author_book")]
     private Collection $authors;
 
     public function __construct()
@@ -55,10 +64,43 @@ class Book
         return $this->id;
     }
 
+
     /**
-     * @return string|null
+     * @return Collection<int, Author>
      */
-    public function getTitle(): ?string
+    public function getAuthors(): Collection
+    {
+        return $this->authors;
+    }
+
+    /**
+     * @param Author $author
+     * @return Book
+     */
+    public function addAuthor(Author $author): self
+    {
+        if (!$this->authors->contains($author)) {
+            $this->authors->add($author);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param Author $author
+     * @return Book
+     */
+    public function removeAuthor(Author $author): self
+    {
+        $this->authors->removeElement($author);
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTitle(): string
     {
         return $this->title;
     }
@@ -83,10 +125,10 @@ class Book
     }
 
     /**
-     * @param string|null $description
+     * @param string $description
      * @return Book
      */
-    public function setDescription(?string $description): self
+    public function setDescription(string $description): self
     {
         $this->description = $description;
 
@@ -94,16 +136,16 @@ class Book
     }
 
     /**
-     * @return string|null
+     * @return string
      */
-    public function getImage(): ?string
+    public function getImage(): string
     {
         return $this->image;
     }
 
     /**
      * @param string $image
-     * @return Book
+     * @return $this
      */
     public function setImage(string $image): self
     {
@@ -121,48 +163,11 @@ class Book
     }
 
     /**
-     * @param DateTimeImmutable $published_at
-     * @return Book
+     * @param DateTimeImmutable $publishedAt
+     * @return void
      */
-    public function setPublishedAt(DateTimeImmutable $published_at): self
+    public function setPublishedAt(DateTimeImmutable $publishedAt): void
     {
-        $this->publishedAt = $published_at;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection
-     */
-    public function getAuthors(): Collection
-    {
-        return $this->authors;
-    }
-
-    /**
-     * @param Author $author
-     * @return $this
-     */
-    public function addAuthor(Author $author): self
-    {
-        if (!$this->authors->contains($author)) {
-            $this->authors->add($author);
-            $author->addBook($this);
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param Author $author
-     * @return $this
-     */
-    public function removeAuthor(Author $author): self
-    {
-        if ($this->authors->removeElement($author)) {
-            $author->removeBook($this);
-        }
-
-        return $this;
+        $this->publishedAt = $publishedAt;
     }
 }

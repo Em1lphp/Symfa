@@ -29,23 +29,9 @@ class BookRepository extends ServiceEntityRepository
     {
         $qb = $this->getEntityManager()->createQueryBuilder();
 
-        $qb->select('a, b')
+        $qb->select('b, a')
             ->from(Book::class, 'b')
             ->leftJoin('b.authors', 'a');
         return $qb->getQuery()->getResult();
-    }
-
-    public function getOneBook($id): ?Book
-    {
-        $qb = $this->getEntityManager()->createQueryBuilder();
-
-        $qb->select('a, b')
-            ->from(Book::class, 'b')
-            ->leftJoin('b.authors', 'a')
-            ->where('b.id = :id')
-            ->setParameter('id', $id)
-            ->setMaxResults(1);
-
-        return $qb->getQuery()->getOneOrNullResult();
     }
 }

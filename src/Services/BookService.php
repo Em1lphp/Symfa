@@ -3,9 +3,15 @@
 namespace App\Services;
 
 use App\Entity\Author;
-use App\Repository\AuthorRepository;
+use App\Entity\Book;
 use App\Repository\BookRepository;
+
+use DateTimeImmutable;
+
 use Doctrine\ORM\EntityManagerInterface;
+
+use Exception as ExceptionAlias;
+
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -19,9 +25,9 @@ class BookService
     ) {}
 
     /**
-     * @return JsonResponse
+     * @return Response|array
      */
-    public function getAllBooks(): Response
+    public function getAllBooks(): Response|array
     {
         $books = $this->bookRepository->getBook();
 
@@ -29,37 +35,42 @@ class BookService
             return new JsonResponse(['error' => 'No books found.'], Response::HTTP_NOT_FOUND);
         }
 
-        $booksArray = [];
-        foreach ($books as $book) {
-            $bookArray = [
-                'id' => $book->getId(),
-                'title' => $book->getTitle(),
-                'description' => $book->getDescription(),
-                'image' => $book->getImage(),
-                'publishedAt' => $book->getPublishedAt(),
-                'authors' => $this->getAuthorsArray($book->getAuthors()),
-            ];
-            $booksArray[] = $bookArray;
-        }
-
-        $json = $this->serializer->serialize($booksArray, 'json');
-        return new JsonResponse($json, Response::HTTP_OK, [], true);
+        $results = $this->serializer->serialize($books, 'json', ['groups' => 'book']);
+        $response = new Response($results);
+        $response->headers->set('Content-Type', 'application/json; charset=utf-8');
+        return $response;
     }
 
     /**
-     * @param $authors
-     * @return array
+     * @param array $data
+     * @param EntityManagerInterface $entityManager
+     * @return JsonResponse
+     * @throws ExceptionAlias
      */
-    private function getAuthorsArray($authors): array
+    public function createBook(array $data, EntityManagerInterface $entityManager)
     {
-        $authorsArray = [];
-        foreach ($authors as $author) {
-            $authorsArray[] = [
-                'id' => $author->getId(),
-                'name' => $author->getName(),
-                'surname' => $author->getSurname(),
-            ];
+        if (!$data) {
+            return new JsonResponse(['error' => 'Отсутствуют данные для создания'], Response::HTTP_BAD_REQUEST);
         }
-        return $authorsArray;
+
+        $book = new Book();
+        $book->setTitle($data['title']);
+        $book->setDescription($data['description'] ?? null);
+        $book->setImage($data['image']);
+        $book->setPublishedAt(new DateTimeImmutable($data['publishedAt']));
+
+
+        $author = new Author();
+        $author->setName($data['name']);
+        $author->setSurname($data['surname']);
+        $author->setPatronymic($data['patronymic'] ?? null);
+
+        $author->addBook($book);
+
+        $entityManager->persist($book);
+        $entityManager->persist($author);
+        $entityManager->flush();
+
+        return new JsonResponse(['message' => 'Книга и автор успешно созданы'], Response::HTTP_OK);
     }
 }

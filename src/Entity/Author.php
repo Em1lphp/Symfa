@@ -6,9 +6,10 @@ use App\Repository\AuthorRepository;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-
 use Symfony\Component\Serializer\Annotation\Groups;
+
 
 #[ORM\Entity(repositoryClass: AuthorRepository::class)]
 class Author
@@ -16,22 +17,23 @@ class Author
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['author','book'])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 50)]
-    #[Groups(["author"])]
-    private ?string $name = null;
+    #[ORM\Column(type: Types::STRING, length: 50,nullable: false)]
+    #[Groups(['author','book'])]
+    private string $name;
 
-    #[ORM\Column(length: 50)]
-    #[Groups(["author"])]
+    #[ORM\Column(type: Types::STRING, length: 50,nullable: false)]
+    #[Groups(['author','book'])]
     private ?string $surname = null;
 
-    #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(["author"])]
+    #[ORM\Column(type: Types::STRING, length: 50, nullable: true)]
+    #[Groups(['author','book'])]
     private ?string $patronymic = null;
 
-    #[ORM\ManyToMany(targetEntity: Book::class, inversedBy: 'authors')]
-    #[Groups(["author"])]
+    #[ORM\ManyToMany(targetEntity: Book::class, mappedBy: 'authors')]
+    #[Groups(['author'])]
     private Collection $books;
 
     public function __construct()
@@ -48,9 +50,9 @@ class Author
     }
 
     /**
-     * @return string|null
+     * @return string
      */
-    public function getName(): ?string
+    public function getName(): string
     {
         return $this->name;
     }
@@ -67,9 +69,9 @@ class Author
     }
 
     /**
-     * @return string|null
+     * @return string
      */
-    public function getSurname(): ?string
+    public function getSurname(): string
     {
         return $this->surname;
     }

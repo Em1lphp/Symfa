@@ -37,7 +37,7 @@ final class Version20240207215228 extends AbstractMigration
         $books->addColumn('title', Types::STRING, ['length' => 100])->setNotnull(true);
         $books->addColumn('description', Types::STRING, ['length' => 50])->setNotnull(false);
         $books->addColumn('image', Types::TEXT)->setNotnull(true);
-        $books->addColumn('published_at', Types::DATETIMETZ_IMMUTABLE);
+        $books->addColumn('published_at', Types::DATETIMETZ_IMMUTABLE)->setNotnull(true);
         $books->setPrimaryKey(['id']);
         $books->addUniqueIndex(['image']);
     }
