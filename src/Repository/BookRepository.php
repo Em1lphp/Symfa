@@ -34,4 +34,19 @@ class BookRepository extends ServiceEntityRepository
             ->leftJoin('b.authors', 'a');
         return $qb->getQuery()->getResult();
     }
+
+    /**
+     * @param string $surname
+     * @return array
+     */
+    public function findByAuthorSurname(string $surname): array
+    {
+        $qb = $this->getEntityManager()->createQueryBuilder();
+        $qb->select('b')
+            ->from(Book::class,'b')
+            ->leftJoin('b.authors', 'a')
+            ->andWhere('a.surname = :surname')
+            ->setParameter('surname', $surname);
+        return $qb->getQuery()->getResult();
+    }
 }
